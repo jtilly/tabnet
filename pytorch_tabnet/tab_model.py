@@ -6,8 +6,9 @@ from pytorch_tabnet import tab_network
 from pytorch_tabnet.multiclass_utils import unique_labels
 from sklearn.metrics import roc_auc_score, mean_squared_error, accuracy_score
 from torch.nn.utils import clip_grad_norm_
-from pytorch_tabnet.utils import (PredictDataset, plot_losses,
-                                  create_dataloaders, create_explain_matrix)
+from pytorch_tabnet.utils import (PredictDataset,
+                                  create_dataloaders,
+                                  create_explain_matrix)
 from torch.utils.data import DataLoader
 
 
@@ -146,10 +147,14 @@ class TabModel(object):
         metrics_train = []
         metrics_valid = []
 
+        print("Will train until validation stopping metric",
+              f"hasn't improved in {self.patience} rounds.")
+
         while (self.epoch < self.max_epochs and
                self.patience_counter < self.patience):
-            print(f"EPOCH : {self.epoch}")
             fit_metrics = self.fit_epoch(train_dataloader, valid_dataloader)
+
+            # leaving it here, may be used for callbacks later
             losses_train.append(fit_metrics['train']['loss_avg'])
             losses_valid.append(fit_metrics['valid']['total_loss'])
             metrics_train.append(fit_metrics['train']['stopping_loss'])
@@ -166,11 +171,13 @@ class TabModel(object):
             else:
                 self.patience_counter += 1
 
-            print("Best metric valid: ", self.best_cost)
+            # print("Best metric valid: ", self.best_cost)
             self.epoch += 1
 
             if self.epoch % self.verbose == 0:
-                plot_losses(losses_train, losses_valid, metrics_train, metrics_valid)
+                print("EPOCH:", self.epoch,
+                      "Training stopping metric:", fit_metrics['train']['stopping_loss'],
+                      "Validation stopping metric:", fit_metrics['valid']['stopping_loss'])
 
         # load best models post training
         self.load_best_model()
